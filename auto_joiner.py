@@ -44,12 +44,14 @@ class Team:
         self.check_blacklist()
 
     def __str__(self):
-        channel_string = '\n\t'.join([str(channel) for channel in self.channels])
+        channel_string = '\n\t'.join([str(channel)
+                                     for channel in self.channels])
 
         return f"{self.name}\n\t{channel_string}"
 
     def get_elem(self):
-        team_header = browser.find_element_by_css_selector(f"h3[id='{self.t_id}'")
+        team_header = browser.find_element_by_css_selector(
+            f"h3[id='{self.t_id}'")
         team_elem = team_header.find_element_by_xpath("..")
         return team_elem
 
@@ -65,18 +67,22 @@ class Team:
 
     def get_channels(self):
         self.expand_channels()
-        channels = self.get_elem().find_elements_by_css_selector(".channels > ul > ng-include > li")
+        channels = self.get_elem().find_elements_by_css_selector(
+            ".channels > ul > ng-include > li")
 
-        channel_names = [channel.get_attribute("data-tid") for channel in channels]
+        channel_names = [channel.get_attribute(
+            "data-tid") for channel in channels]
         channel_names = [channel_name[channel_name.find("channel-") + 8:channel_name.find("-li")] for channel_name in
                          channel_names if channel_name is not None]
 
-        channels_ids = [channel.get_attribute("id").replace("channel-", "") for channel in channels]
+        channels_ids = [channel.get_attribute("id").replace(
+            "channel-", "") for channel in channels]
 
         meeting_states = []
         for channel in channels:
             try:
-                channel.find_element_by_css_selector("a > active-calls-counter")
+                channel.find_element_by_css_selector(
+                    "a > active-calls-counter")
                 meeting_states.append(True)
             except exceptions.NoSuchElementException:
                 meeting_states.append(False)
@@ -86,7 +92,8 @@ class Team:
 
     def check_blacklist(self):
         blacklist = config['blacklist']
-        blacklist_item = next((bl_team for bl_team in blacklist if bl_team['team_name'] == self.name), None)
+        blacklist_item = next(
+            (bl_team for bl_team in blacklist if bl_team['team_name'] == self.name), None)
         if blacklist_item is None:
             return
 
@@ -161,7 +168,8 @@ def init_browser():
     })
     chrome_options.add_argument('--no-sandbox')
 
-    chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    chrome_options.add_experimental_option(
+        'excludeSwitches', ['enable-automation'])
 
     if 'headless' in config and config['headless']:
         chrome_options.add_argument('--headless')
@@ -175,11 +183,14 @@ def init_browser():
             browser = webdriver.Chrome(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install(),
                                        options=chrome_options)
         elif config['chrome_type'] == "msedge":
-            browser = Edge(EdgeChromiumDriverManager().install(), options=chrome_options)
+            browser = Edge(EdgeChromiumDriverManager().install(),
+                           options=chrome_options)
         else:
-            browser = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+            browser = webdriver.Chrome(
+                ChromeDriverManager().install(), options=chrome_options)
     else:
-        browser = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+        browser = webdriver.Chrome(
+            ChromeDriverManager().install(), options=chrome_options)
 
     # make the window a minimum width to show the meetings menu
     window_size = browser.get_window_size()
@@ -197,11 +208,14 @@ def discord_notification(title, description):
         return
 
     discord_webhook_url = config['discord_webhook_url']
-    webhook = Webhook.from_url(discord_webhook_url, adapter=RequestsWebhookAdapter())
+    webhook = Webhook.from_url(
+        discord_webhook_url, adapter=RequestsWebhookAdapter())
 
-    embed = Embed(title=f"{title}", description=f"{description}",colour=0x0011FF)
+    embed = Embed(title=f"{title}",
+                  description=f"{description}", colour=0x0011FF)
     embed.set_author(name="Ms-Teams-Auto-Joiner-Bot")
-    embed.set_footer(text=f"\nTime: [{datetime.now():%Y:%m:%d-%H:%M:%S}]\nlogin-id: {config['email']}")
+    embed.set_footer(
+        text=f"\nTime: [{datetime.now():%Y:%m:%d-%H:%M:%S}]\nlogin-id: {config['email']}")
 
     try:
         webhook.send(embed=embed)
@@ -211,7 +225,8 @@ def discord_notification(title, description):
 
 def wait_until_found(sel, timeout, print_error=True):
     try:
-        element_present = EC.visibility_of_element_located((By.CSS_SELECTOR, sel))
+        element_present = EC.visibility_of_element_located(
+            (By.CSS_SELECTOR, sel))
         WebDriverWait(browser, timeout).until(element_present)
 
         return browser.find_element_by_css_selector(sel)
@@ -223,13 +238,15 @@ def wait_until_found(sel, timeout, print_error=True):
 
 
 def switch_to_teams_tab():
-    teams_button = wait_until_found("button.app-bar-link > ng-include > svg.icons-teams", 5)
+    teams_button = wait_until_found(
+        "button.app-bar-link > ng-include > svg.icons-teams", 5)
     if teams_button is not None:
         teams_button.click()
 
 
 def switch_to_calendar_tab():
-    calendar_button = wait_until_found("button.app-bar-link > ng-include > svg.icons-calendar", 5)
+    calendar_button = wait_until_found(
+        "button.app-bar-link > ng-include > svg.icons-calendar", 5)
     if calendar_button is not None:
         calendar_button.click()
 
@@ -244,7 +261,8 @@ def change_organisation(org_num):
     profile_button.click()
 
     # Find and click the organisation with the right id
-    change_org_button = wait_until_found(f"li.tenant-list-item[aria-posinset='{org_num+1}", 10)
+    change_org_button = wait_until_found(
+        f"li.tenant-list-item[aria-posinset='{org_num+1}", 10)
     if change_org_button is None:
         print("Something went wrong while changing the organisation")
         return
@@ -264,14 +282,16 @@ def change_organisation(org_num):
 
 def prepare_page(include_calendar):
     try:
-        browser.execute_script("document.getElementById('toast-container').remove()")
+        browser.execute_script(
+            "document.getElementById('toast-container').remove()")
     except exceptions.JavascriptException:
         pass
 
     if include_calendar:
         switch_to_calendar_tab()
 
-        view_switcher = wait_until_found(".ms-CommandBar-secondaryCommand > div > button[class*='__topBarContent']", 5)
+        view_switcher = wait_until_found(
+            ".ms-CommandBar-secondaryCommand > div > button[class*='__topBarContent']", 5)
 
         if view_switcher is not None:
             try:
@@ -302,11 +322,15 @@ def get_all_teams():
     team_elems = browser.find_elements_by_css_selector(
         "ul>li[role='treeitem']>div[sv-element]")
 
-    team_names = [team_elem.get_attribute("data-tid") for team_elem in team_elems]
-    team_names = [team_name[team_name.find('team-') + 5:team_name.rfind("-li")] for team_name in team_names]
+    team_names = [team_elem.get_attribute(
+        "data-tid") for team_elem in team_elems]
+    team_names = [team_name[team_name.find(
+        'team-') + 5:team_name.rfind("-li")] for team_name in team_names]
 
-    team_headers = [team_elem.find_element_by_css_selector("h3") for team_elem in team_elems]
-    team_ids = [team_header.get_attribute("id") for team_header in team_headers]
+    team_headers = [team_elem.find_element_by_css_selector(
+        "h3") for team_elem in team_elems]
+    team_ids = [team_header.get_attribute("id")
+                for team_header in team_headers]
 
     return [Team(team_names[i], team_ids[i]) for i in range(len(team_elems))]
 
@@ -317,13 +341,16 @@ def get_meetings(teams):
     for team in teams:
         for channel in team.channels:
             if channel.has_meeting and not channel.blacklisted:
-                browser.execute_script(f'window.location = "{conversation_link}a?threadId={channel.c_id}&ctx=channel";')
+                browser.execute_script(
+                    f'window.location = "{conversation_link}a?threadId={channel.c_id}&ctx=channel";')
                 switch_to_teams_tab()
 
-                meeting_elem = wait_until_found(".ts-calling-thread-header", 10)
+                meeting_elem = wait_until_found(
+                    ".ts-calling-thread-header", 10)
                 if meeting_elem is None:
                     continue
-                meeting_elems = browser.find_elements_by_css_selector(".ts-calling-thread-header")
+                meeting_elems = browser.find_elements_by_css_selector(
+                    ".ts-calling-thread-header")
                 for meeting_elem in meeting_elems:
                     meeting_id = meeting_elem.get_attribute("id")
                     time_started = int(meeting_id.replace("m", "")[:-3])
@@ -345,7 +372,8 @@ def get_calendar_meetings():
         print("No calendar element found, switch to mode 2 to only check channel meetings")
         return
 
-    join_buttons = browser.find_elements_by_css_selector("button[class*='__joinButton'], button[class*='__activeCall']")
+    join_buttons = browser.find_elements_by_css_selector(
+        "button[class*='__joinButton'], button[class*='__activeCall']")
     if len(join_buttons) == 0:
         return
 
@@ -356,7 +384,8 @@ def get_calendar_meetings():
 
     for meeting_card in meeting_cards:
         style_string = meeting_card.get_attribute("style")
-        top_offset = float(style_string[style_string.find("top: ") + 5:style_string.find("rem;")])
+        top_offset = float(style_string[style_string.find(
+            "top: ") + 5:style_string.find("rem;")])
 
         minutes_from_midnight = int(top_offset / .135)
 
@@ -366,11 +395,13 @@ def get_calendar_meetings():
         start_time = midnight + minutes_from_midnight * 60
 
         sec_meeting_card = meeting_card.find_element_by_css_selector("div")
-        meeting_name = sec_meeting_card.get_attribute("title").replace("\n", " ")
+        meeting_name = sec_meeting_card.get_attribute(
+            "title").replace("\n", " ")
 
         meeting_id = sec_meeting_card.get_attribute("id")
 
-        meetings.append(Meeting(meeting_id, start_time, meeting_name, calendar_meeting=True))
+        meetings.append(Meeting(meeting_id, start_time,
+                        meeting_name, calendar_meeting=True))
 
 
 def decide_meeting():
@@ -378,7 +409,8 @@ def decide_meeting():
 
     newest_meetings = []
 
-    meetings = [meeting for meeting in meetings if not meeting.calendar_blacklisted]
+    meetings = [
+        meeting for meeting in meetings if not meeting.calendar_blacklisted]
     if len(meetings) == 0:
         return
 
@@ -392,8 +424,8 @@ def decide_meeting():
             break
 
     if (current_meeting is None or newest_meetings[0].time_started > current_meeting.time_started) and (
-            current_meeting is None or newest_meetings[0].m_id != current_meeting.m_id) and newest_meetings[
-        0].m_id not in already_joined_ids:
+        current_meeting is None or newest_meetings[0].m_id != current_meeting.m_id) and newest_meetings[
+            0].m_id not in already_joined_ids:
         return newest_meetings[0]
 
     return
@@ -406,20 +438,24 @@ def join_meeting(meeting):
 
     if meeting.calendar_meeting:
         switch_to_calendar_tab()
-        join_btn = wait_until_found(f"div[id='{meeting.m_id}'] > div > button", 5)
+        join_btn = wait_until_found(
+            f"div[id='{meeting.m_id}'] > div > button", 5)
 
     else:
-        browser.execute_script(f'window.location = "{conversation_link}a?threadId={meeting.channel_id}&ctx=channel";')
+        browser.execute_script(
+            f'window.location = "{conversation_link}a?threadId={meeting.channel_id}&ctx=channel";')
         switch_to_teams_tab()
 
-        join_btn = wait_until_found(f"div[id='{meeting.m_id}'] > calling-join-button > button", 5)
+        join_btn = wait_until_found(
+            f"div[id='{meeting.m_id}'] > calling-join-button > button", 5)
 
     if join_btn is None:
         return
 
     browser.execute_script("arguments[0].click()", join_btn)
 
-    join_now_btn = wait_until_found("button[data-tid='prejoin-join-button']", 30)
+    join_now_btn = wait_until_found(
+        "button[data-tid='prejoin-join-button']", 30)
     if join_now_btn is None:
         return
 
@@ -430,35 +466,40 @@ def join_meeting(meeting):
         active_correlation_id = ""
 
     # turn camera off
-    video_btn = browser.find_element_by_css_selector("toggle-button[data-tid='toggle-video']>div>button")
+    video_btn = browser.find_element_by_css_selector(
+        "toggle-button[data-tid='toggle-video']>div>button")
     video_is_on = video_btn.get_attribute("aria-pressed")
     if video_is_on == "true":
         video_btn.click()
         print("Video disabled")
 
     # turn mic off
-    audio_btn = browser.find_element_by_css_selector("toggle-button[data-tid='toggle-mute']>div>button")
+    audio_btn = browser.find_element_by_css_selector(
+        "toggle-button[data-tid='toggle-mute']>div>button")
     audio_is_on = audio_btn.get_attribute("aria-pressed")
     if audio_is_on == "true":
         audio_btn.click()
         print("Microphone off")
 
-    if 'random_delay' in config: 
+    if 'random_delay' in config:
         if isinstance(config['random_delay'], bool):
-            print(f"Please update the random_delay in config.json file as per latest instructions in README")
+            print(
+                f"Please update the random_delay in config.json file as per latest instructions in README")
             if config['random_delay']:
                 delay = random.randrange(10, 31, 1)
             else:
                 delay = 0
         else:
-            delay = random.randrange(config['random_delay'][0], config['random_delay'][1] + 1 , 1)
-        
+            delay = random.randrange(
+                config['random_delay'][0], config['random_delay'][1] + 1, 1)
+
         if delay > 0:
             print(f"Wating for {delay}s")
             time.sleep(delay)
 
     # find again to avoid stale element exception
-    join_now_btn = wait_until_found("button[data-tid='prejoin-join-button']", 5)
+    join_now_btn = wait_until_found(
+        "button[data-tid='prejoin-join-button']", 5)
     if join_now_btn is None:
         return
     join_now_btn.click()
@@ -469,7 +510,8 @@ def join_meeting(meeting):
     if "join_message" in config and config["join_message"] != "":
         time.sleep(3)
         try:
-            browser.execute_script("document.getElementById('chat-button').click()")
+            browser.execute_script(
+                "document.getElementById('chat-button').click()")
             text_input = wait_until_found('div[role="textbox"] > div', 5)
 
             js_change_text = """
@@ -477,7 +519,8 @@ def join_meeting(meeting):
               elm.innerHTML = txt;
               """
 
-            browser.execute_script(js_change_text, text_input, config["join_message"])
+            browser.execute_script(
+                js_change_text, text_input, config["join_message"])
 
             time.sleep(3)
             send_button = wait_until_found("#send-message-button", 5)
@@ -518,39 +561,48 @@ def get_meeting_members():
 
     # open the meeting member side page
     try:
-        browser.execute_script("document.getElementById('roster-button').click()")
+        browser.execute_script(
+            "document.getElementById('roster-button').click()")
     except exceptions.JavascriptException:
         print("Failed to open meeting member page")
         return None
 
-    participants_elem = wait_until_found("calling-roster-section[section-key='participantsInCall'] .roster-list-title", 2, print_error=False)
-    attendees_elem = wait_until_found("calling-roster-section[section-key='attendeesInMeeting'] .roster-list-title", 2, print_error=False)
+    participants_elem = wait_until_found(
+        "calling-roster-section[section-key='participantsInCall'] .roster-list-title", 2, print_error=False)
+    attendees_elem = wait_until_found(
+        "calling-roster-section[section-key='attendeesInMeeting'] .roster-list-title", 2, print_error=False)
 
     if participants_elem is None and attendees_elem is None:
         print("Failed to get meeting members")
         return None
 
     if participants_elem is not None:
-        participants = [int(s) for s in participants_elem.get_attribute("aria-label").split() if s.isdigit()]
+        participants = [int(s) for s in participants_elem.get_attribute(
+            "aria-label").split() if s.isdigit()]
     else:
         participants = [0]
 
     if attendees_elem is not None:
-        attendees = [int(s) for s in attendees_elem.get_attribute("aria-label").split() if s.isdigit()]
+        attendees = [int(s) for s in attendees_elem.get_attribute(
+            "aria-label").split() if s.isdigit()]
     else:
         attendees = [0]
 
     # close the meeting member side page, this only makes a difference if pause_search is true
     try:
-        browser.execute_script("document.getElementById('roster-button').click()")
+        browser.execute_script(
+            "document.getElementById('roster-button').click()")
     except exceptions.JavascriptException:
         # if the roster button doesn't exist click the three dots button before
         try:
-            browser.execute_script("document.getElementById('callingButtons-showMoreBtn').click()")
+            browser.execute_script(
+                "document.getElementById('callingButtons-showMoreBtn').click()")
             time.sleep(1)
-            browser.execute_script("document.getElementById('roster-button').click()")
+            browser.execute_script(
+                "document.getElementById('roster-button').click()")
         except exceptions.JavascriptException:
-            print("Failed to close meeting member page, this might result in an error on next search")
+            print(
+                "Failed to close meeting member page, this might result in an error on next search")
 
     return sum(participants + attendees)
 
@@ -562,7 +614,8 @@ def hangup():
 
     try:
         switch_to_teams_tab()
-        hangup_btn = browser.find_element_by_css_selector("button[data-tid='call-hangup']")
+        hangup_btn = browser.find_element_by_css_selector(
+            "button[data-tid='call-hangup']")
         hangup_btn.click()
 
         print(f"Left Meeting: {current_meeting.title}")
@@ -588,20 +641,23 @@ def handle_leave_threshold(current_meeting_members, total_meeting_members):
     if leave_number is not None and leave_number != "" and int(leave_number) > 0:
         if (total_meeting_members - current_meeting_members) >= int(leave_number):
             print("Leave threshold (absolute) triggered")
-            discord_notification("Left meeting, threshold triggered", f"{current_meeting.title}")
+            discord_notification(
+                "Left meeting, threshold triggered", f"{current_meeting.title}")
             hangup()
             return True
 
     if leave_percentage is not None and leave_percentage != "" and 0 < int(leave_percentage) <= 100:
         if (current_meeting_members / total_meeting_members) * 100 < int(leave_percentage):
             print("Leave threshold (percentage) triggered")
-            discord_notification("Left meeting, threshold triggered", f"{current_meeting.title}")
+            discord_notification(
+                "Left meeting, threshold triggered", f"{current_meeting.title}")
             hangup()
             return True
 
     if 0 < current_meeting_members < 3:
         print("Last attendee in meeting")
-        discord_notification("Left meeting, last member", f"{current_meeting.title}")
+        discord_notification("Left meeting, last member",
+                             f"{current_meeting.title}")
         hangup()
         return True
 
@@ -650,12 +706,14 @@ def main():
         keep_logged_in = wait_until_found("input[id='idBtn_Back']", 5)
         if keep_logged_in is not None:
             keep_logged_in.click()
-            discord_notification("Logged in successfully","  ")
+            discord_notification("Logged in successfully", "  ")
         else:
             print("Login Unsuccessful, recheck entries in config.json")
-            discord_notification("Login Unsuccessful"," recheck entries in config.json")
+            discord_notification("Login Unsuccessful",
+                                 " recheck entries in config.json")
 
-        use_web_instead = wait_until_found(".use-app-lnk", 5, print_error=False)
+        use_web_instead = wait_until_found(
+            ".use-app-lnk", 5, print_error=False)
         if use_web_instead is not None:
             use_web_instead.click()
 
@@ -680,7 +738,7 @@ def main():
 
     print("\rFound page, do not click anything on the webpage from now on.")
     # wait a bit so the meetings are initialized
-    time.sleep(5)
+    time.sleep(8)
 
     if mode != 2:
         prepare_page(include_calendar=True)
@@ -698,7 +756,8 @@ def main():
 
         if len(teams) == 0:
             print("No Teams found, is MS Teams in list mode? (switch to mode 3 if you only want calendar meetings)")
-            discord_notification("No Teams found", "is MS Teams in list mode? (switch to mode 3 if you only want calendar meetings)")
+            discord_notification(
+                "No Teams found", "is MS Teams in list mode? (switch to mode 3 if you only want calendar meetings)")
             exit(1)
 
         print()
@@ -713,7 +772,8 @@ def main():
     while 1:
         timestamp = datetime.now()
         if "pause_search" in config and config['pause_search'] and current_meeting is not None:
-            print(f"\n[{timestamp:%H:%M:%S}] Meeting search is paused because you are still in a meeting")
+            print(
+                f"\n[{timestamp:%H:%M:%S}] Meeting search is paused because you are still in a meeting")
         else:
             print(f"\n[{timestamp:%H:%M:%S}] Looking for new meetings")
 
@@ -723,7 +783,8 @@ def main():
 
                 if len(teams) == 0:
                     print("Nothing found, is Teams in list mode?")
-                    discord_notification("No Teams found", "is MS Teams in list mode? (switch to mode 3 if you only want calendar meetings)")
+                    discord_notification(
+                        "No Teams found", "is MS Teams in list mode? (switch to mode 3 if you only want calendar meetings)")
                     exit(1)
                 else:
                     get_meetings(teams)
@@ -764,19 +825,22 @@ def main():
 
 if __name__ == "__main__":
     load_config()
-
+    now = datetime.now()
+    run_at = datetime.strptime(config['run_at_time'], "%H:%M").replace(year=now.year, month=now.month,
+                                                                                day=now.day)
+    run_until = datetime.strptime(config['run_until_time'], "%H:%M").replace(
+        year=now.year, month=now.month, day=now.day).time()
     if 'run_at_time' in config and config['run_at_time'] != "":
-        now = datetime.now()
-        run_at = datetime.strptime(config['run_at_time'], "%H:%M").replace(year=now.year, month=now.month, day=now.day)
+        if 'run_until_time' in config and config['run_until_time'] != "" and run_until > now.time() and now.time()<run_at.time():
 
-        if run_at.time() < now.time():
-            run_at = datetime.strptime(config['run_at_time'], "%H:%M").replace(year=now.year, month=now.month,
-                                                                               day=now.day + 1)
+            if run_at.time() < now.time():
+                run_at = datetime.strptime(config['run_at_time'], "%H:%M").replace(year=now.year, month=now.month,
+                                                                                day=now.day + 1)
 
-        start_delay = (run_at - now).total_seconds()
+            start_delay = (run_at - now).total_seconds()
 
-        print(f"Waiting until {run_at} ({int(start_delay)}s)")
-        time.sleep(start_delay)
+            print(f"Waiting until {run_at} ({int(start_delay)}s)")
+            time.sleep(start_delay)
 
     try:
         main()
