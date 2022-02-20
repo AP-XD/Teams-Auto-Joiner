@@ -824,7 +824,12 @@ def main():
 
 
 if __name__ == "__main__":
-    load_config()
+    try:
+        load_config()
+    except Exception as e:
+        print("Configuration file missing or in wrong format")
+        print(str(e))
+        exit(1)
     now = datetime.now()
     run_at = datetime.strptime(config['run_at_time'], "%H:%M").replace(year=now.year, month=now.month,
                                                                                 day=now.day)
